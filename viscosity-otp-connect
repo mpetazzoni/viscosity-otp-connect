@@ -1,0 +1,88 @@
+#!/usr/bin/env python
+
+# Copyright (C) 2020 Maxime Petazzoni <maxime.petazzoni@bulix.org>
+#
+# Connect to a defined, OTP-enabled Viscosity VPN connection.
+#
+# Generates the OTP from the secret, triggers the connection through Viscosity
+# and reactivates the terminal in one swell swoop.
+
+import argparse
+import collections
+import datetime
+import os
+import osascript
+import pathlib
+import pyotp
+import pyperclip
+import subprocess
+import sys
+import viscosity
+import yaml
+
+
+Connection = collections.namedtuple('Connection', 'key name connection secret')
+
+
+def get_connect_specs(filename, encrypted=False):
+    """Read the connection spec file, which may be GPG-encrypted, and return a
+    mapping of Connection named tuples."""
+    filename = str(pathlib.Path(filename).expanduser())
+    if not os.path.exists(filename):
+        filename = filename + '.gpg'
+    if encrypted:
+        data = subprocess.check_output(
+                ['gpg', '--decrypt', filename],
+                stderr=subprocess.DEVNULL)
+    else:
+        with open(filename) as f:
+            data = f.read()
+    specs = yaml.load(data, Loader=yaml.SafeLoader)
+    return {k: Connection(key=k, **v) for k, v in specs.items()}
+
+
+def generate_otp(secret, offset=0):
+    """Generate an TOTP from the given secret, optionally applying the given
+    offset (in seconds) to the current time considered for the TOTP. This can
+    help address issues with clock skew with the remote server."""
+    dt = datetime.datetime.now() + datetime.timedelta(seconds=offset)
+    return pyotp.TOTP(secret).at(dt)
+
+
+def main(options):
+    specs = get_connect_specs(options.spec_file, not options.plaintext)
+    if options.list:
+        for spec in specs.values():
+            print(spec)
+        return 0
+
+    spec = specs[options.name]
+    otp = generate_otp(spec.secret, options.offset)
+    print('Generated OTP {} for {}.'.format(otp, options.name))
+
+    if not options.dry_run:
+        previous = pyperclip.paste()
+        print('Placing OTP in paste clipboard ...')
+        pyperclip.copy(otp)
+        print('Asking Viscosity to connect to {} ...'.format(spec.connection))
+        viscosity.connect(spec)
+        osascript.run('activate application "{}"'.format(options.terminal))
+        pyperclip.copy(previous)
+        print('Done; clipboard restored.')
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(
+            'Connect to a configured OTP-enabled VPN with Viscosity')
+    parser.add_argument('-f', '--spec-file',
+                        default='~/.config/viscosity-otp-connect/specs.yaml')
+    parser.add_argument('-p', '--plaintext', action='store_true')
+    parser.add_argument('-o', '--offset', type=int, default=0,
+                        help='Time offset in seconds')
+    parser.add_argument('-n', '--dry-run', action='store_true')
+    parser.add_argument('-t', '--terminal', default='iTerm',
+                        help='Terminal program name to reactivate')
+    parser.add_argument('-l', '--list', action='store_true')
+    parser.add_argument('name')
+    options = parser.parse_args()
+    sys.exit(main(options))

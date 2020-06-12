@@ -1,0 +1,5 @@
+gnupg
+osascript
+pyotp
+pyperclip
+yaml
