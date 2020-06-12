@@ -70,9 +70,37 @@ The most common usage is to simply connect to a named VPN:
 $ viscosity-otp-connect my-vpn
 ```
 
+This will, in order:
+
+* Load (and decrypt, if necessary) the configuration file to get the
+  infomation about the `my-vpn` connection;
+* Generate the TOTP secret for that connection, and place it in your
+  copy-paste buffer;
+* Ask Viscosity to start the VPN connection;
+* The popup dialog for the OTP will appear, **just press Command-V to
+  paste the ready-to-use OTP!**
+* Restore the previous contents of your paste buffer and exit.
+
+### Using a different configuration file
+
 If you need to specify another location for the configuration file, use
 `-f`. If the file isn't encrypted, additionally pass `-p`:
 
 ```
 $ viscosity-otp-connect -f other.yaml -p my-vpn
 ```
+
+### Dealing with clock skew
+
+If your computer time is not precisely kept, the OTP you generate may
+not be accepted by the server. If you know your clock offset, you can
+ask `viscosity-otp-connect` to use a different time to generate your OTP
+with the `-o` option. For example, if your clock is 45 seconds behind:
+
+```
+$ viscosity-otp-connect -o 45 my-vpn
+```
+
+# Future work
+
+* Figure out how to use `osascript` to paste the OTP automatically.
