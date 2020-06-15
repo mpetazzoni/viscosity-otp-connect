@@ -52,8 +52,7 @@ def generate_otp(secret, offset=0):
 def main(options):
     specs = get_connect_specs(options.spec_file, not options.plaintext)
     if options.list:
-        for spec in specs.values():
-            print(spec)
+        print('\n'.join(spec.keys()))
         return 0
 
     if options.name not in specs:

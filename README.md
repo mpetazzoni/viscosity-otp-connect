@@ -101,6 +101,18 @@ with the `-o` option. For example, if your clock is 45 seconds behind:
 $ viscosity-otp-connect -o 45 my-vpn
 ```
 
+## Integrate with shell completion
+
+The `-l` option will list the known connection names, making it easy to
+integrate `viscosity-otp-connect` with your shell's completion
+mechanism. To add completion to Zsh, add the following lines to your
+`~/.zshrc`:
+
+```sh
+_make_vpn_completion() { reply=($(viscosity-otp-connect -l)) }
+compctl -K _make_vpn_completion viscosity-otp-connect
+```
+
 # Future work
 
 * Figure out how to use `osascript` to paste the OTP automatically.
