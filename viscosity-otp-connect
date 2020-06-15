@@ -83,6 +83,9 @@ if __name__ == '__main__':
     parser.add_argument('-t', '--terminal', default='iTerm',
                         help='Terminal program name to reactivate')
     parser.add_argument('-l', '--list', action='store_true')
-    parser.add_argument('name')
+    parser.add_argument('name', nargs='?')
     options = parser.parse_args()
+    if not options.list and not options.name:
+        parser.print_help()
+        sys.exit(1)
     sys.exit(main(options))
