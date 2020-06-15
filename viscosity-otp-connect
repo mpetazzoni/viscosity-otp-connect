@@ -56,6 +56,10 @@ def main(options):
             print(spec)
         return 0
 
+    if options.name not in specs:
+        sys.stderr.write('{} configuration not found!\n'.format(options.name))
+        return 1
+
     spec = specs[options.name]
     otp = generate_otp(spec.secret, options.offset)
     print('Generated OTP {} for {}.'.format(otp, options.name))
