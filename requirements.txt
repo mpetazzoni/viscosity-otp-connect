@@ -2,4 +2,4 @@ gnupg
 osascript
 pyotp
 pyperclip
-yaml
+pyyaml
